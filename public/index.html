@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Loviq 💕</title>
+  <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Poppins',sans-serif;background:#1a0a2e;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:16px;}
+    .app{width:100%;max-width:460px;padding-bottom:40px;}
+
+    /* Cards */
+    .card{background:#1e0f38;border-radius:20px;padding:22px;margin-bottom:12px;border:1px solid #2d1250;}
+    .card-inner{background:#2d1250;border-radius:14px;padding:16px;margin-bottom:10px;}
+
+    /* Typography */
+    h1{font-size:28px;font-weight:700;color:#f5d0e3;}
+    h2{font-size:18px;font-weight:600;color:#f5d0e3;margin-bottom:6px;}
+    p{color:#9b6b8a;font-size:14px;line-height:1.6;}
+
+    /* Inputs */
+    input{width:100%;padding:12px 16px;border:1.5px solid #3d1a60;border-radius:12px;font-size:15px;font-family:'Poppins',sans-serif;outline:none;margin-bottom:10px;background:#2d1250;color:#f5d0e3;transition:border 0.2s;}
+    input:focus{border-color:#c4547e;}
+    input::placeholder{color:#6b4070;}
+
+    /* Buttons */
+    .btn{width:100%;padding:13px;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;transition:all 0.2s;margin-top:6px;}
+    .btn-primary{background:#c4547e;color:#fff;}
+    .btn-primary:hover{background:#d4647e;transform:translateY(-1px);}
+    .btn-primary:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+    .btn-secondary{background:transparent;color:#9b6b8a;border:1.5px solid #3d1a60;}
+    .btn-secondary:hover{background:#2d1250;color:#f5d0e3;}
+    .btn-option{width:100%;padding:13px 16px;border:1.5px solid #3d1a60;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Poppins',sans-serif;text-align:left;background:#1e0f38;color:#d4a0c0;transition:all 0.2s;margin-bottom:8px;display:block;}
+    .btn-option:hover:not(:disabled){border-color:#c4547e;background:#2d1250;color:#f5d0e3;}
+    .btn-option.selected{border:2px solid #c4547e;background:#2d1250;color:#f5d0e3;font-weight:600;}
+    .btn-option:disabled{opacity:0.45;cursor:not-allowed;}
+    .btn-option.correct{border:2px solid #4ade80;background:#0a2a1a;color:#4ade80;}
+    .btn-option.wrong{border:2px solid #f87171;background:#2a0a0a;color:#f87171;}
+
+    /* Scorebar */
+    .score-bar{display:flex;justify-content:space-between;align-items:center;background:#2d1250;border-radius:14px;padding:12px 16px;margin-bottom:10px;border:1px solid #3d1a60;}
+    .score-val{font-size:24px;font-weight:700;color:#e87baa;}
+    .score-label{font-size:11px;color:#6b4070;margin-top:2px;}
+
+    /* Timer */
+    .timer-wrap{margin:6px 0 10px;text-align:center;}
+    .timer-num{font-size:32px;font-weight:700;color:#e87baa;}
+    .timer-bar{height:8px;background:#2d1250;border-radius:4px;overflow:hidden;margin-top:6px;border:1px solid #3d1a60;}
+    .timer-fill{height:100%;background:#c4547e;border-radius:4px;transition:width 1s linear,background 0.3s;}
+
+    /* Riddle */
+    .riddle-box{background:#120828;border-radius:12px;padding:16px;margin:10px 0;border-left:4px solid #c4547e;}
+    .riddle-text{font-size:15px;color:#d4a0c0;line-height:1.7;font-style:italic;}
+
+    /* Badges */
+    .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+    .badge-easy{background:#0a2a1a;color:#4ade80;}
+    .badge-med{background:#2a1a00;color:#fbbf24;}
+    .badge-hard{background:#2a0a1a;color:#f87171;}
+
+    /* Code box */
+    .code-box{background:#120828;border-radius:14px;padding:16px;text-align:center;margin:12px 0;border:2px dashed #3d1a60;}
+    .code-display{font-size:40px;font-weight:700;letter-spacing:10px;color:#e87baa;margin:8px 0;}
+
+    /* Chat */
+    .chat-box{border:1px solid #3d1a60;border-radius:12px;height:120px;overflow-y:auto;padding:10px;background:#120828;margin-bottom:8px;}
+    .chat-msg{font-size:13px;padding:3px 0;color:#d4a0c0;}
+    .chat-msg b{color:#e87baa;}
+    .emoji-row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+    .emoji-btn{background:#1e0f38;border:1px solid #3d1a60;border-radius:8px;cursor:pointer;font-size:18px;padding:4px 8px;}
+    .emoji-btn:hover{background:#2d1250;}
+    .chat-row{display:flex;gap:8px;}
+    .chat-row input{margin:0;flex:1;}
+    .chat-send{padding:12px 16px;background:#c4547e;color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:16px;}
+
+    /* Status banners */
+    .status-banner{text-align:center;padding:10px;border-radius:12px;margin-bottom:8px;font-size:13px;font-weight:600;}
+    .status-waiting{background:#1a0a2e;color:#9b6b8a;border:1px solid #3d1a60;}
+    .status-myturn{background:#2d1250;color:#e87baa;border:1px solid #c4547e;}
+    .status-answered{background:#0a2a1a;color:#4ade80;border:1px solid #4ade80;}
+
+    /* Result overlay */
+    .result-box{border-radius:14px;padding:16px;margin-bottom:10px;text-align:center;}
+    .result-correct{background:#0a2a1a;border:2px solid #4ade80;}
+    .result-wrong{background:#2a0a0a;border:2px solid #f87171;}
+    .result-timeout{background:#2a1a00;border:2px solid #fbbf24;}
+
+    /* Date cards */
+    .date-card{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #3d1a60;border-radius:14px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;background:#1e0f38;}
+    .date-card:hover{border-color:#c4547e;background:#2d1250;}
+    .date-card.selected{border:2px solid #c4547e;background:#2d1250;}
+    .date-title{font-size:14px;font-weight:600;color:#f5d0e3;}
+    .date-desc{font-size:12px;color:#6b4070;margin-top:2px;}
+
+    /* Misc */
+    .error-msg{background:#2a0a1a;color:#f87171;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:10px;display:none;border:1px solid #f87171;}
+    .success-msg{background:#0a2a1a;color:#4ade80;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:10px;border:1px solid #4ade80;}
+    .waiting-dot{display:inline-block;width:7px;height:7px;background:#c4547e;border-radius:50%;margin:0 2px;animation:bounce 1.2s infinite;}
+    .waiting-dot:nth-child(2){animation-delay:0.2s;}
+    .waiting-dot:nth-child(3){animation-delay:0.4s;}
+    @keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.5;}40%{transform:scale(1);opacity:1;}}
+    .player-tag{padding:8px 12px;background:#2d1250;border-radius:10px;font-size:13px;color:#d4a0c0;margin-bottom:6px;border:1px solid #3d1a60;}
+    .hidden{display:none;}
+    .logo-heart{display:inline-block;width:44px;height:44px;background:#2d1250;border-radius:50%;border:2px solid #c4547e;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
+    .partner-status{font-size:12px;color:#9b6b8a;text-align:right;margin-bottom:4px;}
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- HOME -->
+  <div id="screen-home" class="card">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div class="logo-heart">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 21C12 21 3 14 3 8a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6-9 13-9 13z" stroke="#e87baa" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1>Loviq</h1>
+      <p style="margin-top:4px;">The ultimate couples game 💕</p>
+    </div>
+    <div id="error-home" class="error-msg"></div>
+    <label style="font-size:13px;font-weight:500;color:#9b6b8a;display:block;margin-bottom:4px;">Your Name</label>
+    <input id="player-name" placeholder="Enter your name" maxlength="20"/>
+    <button class="btn btn-primary" onclick="createRoom()">Create Game Room</button>
+    <div style="text-align:center;margin:12px 0;color:#3d1a60;font-size:13px;">— or join with a code —</div>
+    <label style="font-size:13px;font-weight:500;color:#9b6b8a;display:block;margin-bottom:4px;">Room Code</label>
+    <input id="join-code" placeholder="AB12CD" maxlength="6" style="text-align:center;font-size:22px;font-weight:700;letter-spacing:6px;text-transform:uppercase;"/>
+    <button class="btn btn-secondary" onclick="joinRoom()">Join Game</button>
+  </div>
+
+  <!-- WAITING -->
+  <div id="screen-waiting" class="card hidden">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:44px;">🎮</div>
+      <h2>Room Created!</h2>
+      <p>Share this code with your partner</p>
+    </div>
+    <div id="error-waiting" class="error-msg"></div>
+    <div class="code-box">
+      <div style="font-size:11px;color:#6b4070;font-weight:600;letter-spacing:2px;">ROOM CODE</div>
+      <div class="code-display" id="display-code">------</div>
+      <div style="font-size:11px;color:#6b4070;">Share with your partner to join</div>
+    </div>
+    <button class="btn btn-primary" onclick="copyCode()">📋 Copy Code</button>
+    <button class="btn btn-secondary" onclick="copyLink()">🔗 Copy Invite Link</button>
+    <div id="waiting-status" style="text-align:center;margin-top:14px;">
+      <p>Waiting for partner <span class="waiting-dot"></span><span class="waiting-dot"></span><span class="waiting-dot"></span></p>
+    </div>
+    <div id="players-list" style="margin-top:10px;"></div>
+    <button id="start-btn" class="btn btn-primary hidden" onclick="startGame()" style="margin-top:12px;">Start Game 🚀</button>
+  </div>
+
+  <!-- LEVEL INTRO -->
+  <div id="screen-levelintro" class="card hidden" style="text-align:center;padding:2rem;">
+    <div style="font-size:56px;" id="level-icon">💕</div>
+    <h2 id="level-title" style="margin:10px 0 6px;font-size:22px;"></h2>
+    <p id="level-desc" style="margin-bottom:16px;"></p>
+    <div id="level-scores" style="display:flex;gap:12px;justify-content:center;margin:14px 0;"></div>
+    <button class="btn btn-primary" id="level-start-btn" onclick="requestNextQuestion()">Let's Play! 🎯</button>
+  </div>
+
+  <!-- RIDDLE -->
+  <div id="screen-riddle" class="hidden">
+    <div class="score-bar">
+      <div><div class="score-val" id="score-p1">0</div><div class="score-label" id="name-p1">P1</div></div>
+      <div style="text-align:center;">
+        <span class="badge" id="level-badge">Level 1</span><br>
+        <span style="font-size:11px;color:#6b4070;" id="q-counter">Q 1/10</span>
+      </div>
+      <div style="text-align:right;"><div class="score-val" id="score-p2">0</div><div class="score-label" id="name-p2">P2</div></div>
+    </div>
+
+    <div class="card">
+      <div id="status-banner" class="status-banner status-myturn">Answer now!</div>
+      <div id="partner-status" class="partner-status"></div>
+
+      <div class="timer-wrap">
+        <div class="timer-num" id="timer-num">45s</div>
+        <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+      </div>
+
+      <div style="font-size:12px;font-weight:600;color:#6b4070;margin-bottom:8px;">Pick your answer:</div>
+      <div id="options-container"></div>
+
+      <div class="riddle-box">
+        <div style="font-size:10px;color:#c4547e;font-weight:700;letter-spacing:1px;margin-bottom:6px;">THE RIDDLE</div>
+        <div class="riddle-text" id="riddle-text"></div>
+      </div>
+
+      <button class="btn btn-primary" id="submit-btn" onclick="submitAnswer()" disabled>Submit Answer</button>
+    </div>
+
+    <!-- Result Box (shows after answering) -->
+    <div id="result-box" class="hidden"></div>
+
+    <!-- Chat -->
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;color:#9b6b8a;margin-bottom:8px;">💬 Chat with partner</div>
+      <div class="chat-box" id="chatbox"></div>
+      <div class="emoji-row">
+        <button class="emoji-btn" onclick="sendEmoji('😘')">😘</button>
+        <button class="emoji-btn" onclick="sendEmoji('❤️')">❤️</button>
+        <button class="emoji-btn" onclick="sendEmoji('😍')">😍</button>
+        <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
+        <button class="emoji-btn" onclick="sendEmoji('💋')">💋</button>
+        <button class="emoji-btn" onclick="sendEmoji('😂')">😂</button>
+        <button class="emoji-btn" onclick="sendEmoji('😏')">😏</button>
+        <button class="emoji-btn" onclick="sendEmoji('👀')">👀</button>
+      </div>
+      <div class="chat-row">
+        <input id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()"/>
+        <button class="chat-send" onclick="sendChat()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME OVER -->
+  <div id="screen-gameover" class="card hidden" style="text-align:center;padding:2rem;">
+    <div style="font-size:56px;">🏆</div>
+    <h2 id="winner-text" style="margin:12px 0 4px;font-size:22px;"></h2>
+    <div id="final-scores" style="display:flex;gap:12px;justify-content:center;margin:16px 0;"></div>
+    <button class="btn btn-primary" onclick="showDates()">Plan Date Night 💕</button>
+    <button class="btn btn-secondary" onclick="location.reload()">Play Again 🔄</button>
+  </div>
+
+  <!-- DATE NIGHT -->
+  <div id="screen-dates" class="card hidden">
+    <h2>🌹 Plan Your Date Night</h2>
+    <p style="margin-bottom:14px;">You finished the game — celebrate with a date!</p>
+    <div id="date-ideas"></div>
+    <div id="schedule-form" class="hidden" style="margin-top:12px;">
+      <div style="font-size:13px;font-weight:500;color:#9b6b8a;margin-bottom:8px;">Schedule your date:</div>
+      <input type="date" id="date-input"/>
+      <input type="time" id="time-input"/>
+      <button class="btn btn-primary" onclick="scheduleDate()">🔔 Set Reminder & Schedule</button>
+    </div>
+  </div>
+
+  <!-- SCHEDULED -->
+  <div id="screen-scheduled" class="card hidden" style="text-align:center;padding:2rem;">
+    <div style="font-size:56px;">📅</div>
+    <h2 style="margin:12px 0 4px;">Date Night Scheduled!</h2>
+    <p>Get ready for a beautiful evening 🌹</p>
+    <div id="scheduled-details" style="background:#2d1250;border-radius:14px;padding:16px;margin:14px 0;font-size:14px;text-align:left;color:#d4a0c0;border:1px solid #3d1a60;"></div>
+    <button class="btn btn-primary" onclick="location.reload()">Play Again 💕</button>
+  </div>
+
+</div>
+
+<script>
+// ─── RIDDLE DATABASE ───
+const RIDDLES = {
+  easy: [
+    {text:"You give it to your partner every night before sleep. It lasts seconds but is never forgotten. What is it?",answer:"A goodnight kiss",options:["A goodnight kiss","A warm hug","A sweet whisper","A love note"]},
+    {text:"The longer you hold it, the warmer it gets. Two people always feel it together. What is it?",answer:"A hug",options:["A hug","Eye contact","A conversation","A hand"]},
+    {text:"It grows stronger the more you confess it, yet saying it out loud makes your heart race. What is it?",answer:"Love",options:["Love","A secret","A promise","A feeling"]},
+    {text:"It happens every time your eyes meet across a crowded room and you forget everyone else. What is it?",answer:"Connection",options:["A smile","Connection","Attraction","A spark"]},
+    {text:"You cannot see it but when they walk in the room you feel it instantly on your skin. What is it?",answer:"Their presence",options:["Their perfume","Their presence","Their energy","Their warmth"]},
+    {text:"Two people share it and each time it becomes more addictive. The first time is always the sweetest. What is it?",answer:"A first kiss",options:["A first kiss","A first date","A first touch","A first glance"]},
+    {text:"It lives on your pillow when they are not there and vanishes the moment they return. What is it?",answer:"Longing",options:["Emptiness","Longing","Their scent","A memory"]},
+    {text:"You whisper it to them in the dark and in the morning pretend you never said it. What is it?",answer:"Your feelings",options:["A secret","Your feelings","A confession","A dream"]},
+    {text:"Your fingers do this without thinking when sitting next to the one you love. What is it?",answer:"Reaching for their hand",options:["Reaching for their hand","Playing with hair","Fidgeting","Touching their face"]},
+    {text:"The more intimate you are the louder it becomes even in total silence. What is it?",answer:"Your heartbeat",options:["Your breath","Your heartbeat","Your thoughts","Your desire"]}
+  ],
+  medium: [
+    {text:"It starts with eye contact, intensifies in silence, and explodes the moment you close the gap. What is it?",answer:"Sexual tension",options:["Anticipation","Sexual tension","Desire","Chemistry"]},
+    {text:"The more layers removed the deeper the trust required. What is it?",answer:"Vulnerability",options:["Undressing","Vulnerability","Intimacy","Exposure"]},
+    {text:"Done with lips and intention — it leaves a mark that fades from skin but stays in memory. What is it?",answer:"A love bite",options:["A love bite","A deep kiss","A whisper","A touch"]},
+    {text:"It is most powerful in the 3 seconds before a kiss when both of you know what is about to happen. What is it?",answer:"Anticipation",options:["Tension","Anticipation","Desire","Electricity"]},
+    {text:"You say it with your body long before you say it with your mouth. It is the most honest confession. What is it?",answer:"I want you",options:["I love you","I want you","I need you","I choose you"]},
+    {text:"It happens right after passion when two people lie still and everything feels completely honest. What is it?",answer:"Intimacy",options:["Silence","Intimacy","Vulnerability","Connection"]},
+    {text:"The hotter it gets between two people the harder it is to breathe. What is it?",answer:"Passion",options:["Heat","Passion","Desire","Attraction"]},
+    {text:"It builds all day through small touches and texts and releases only when you are finally alone. What is it?",answer:"Desire",options:["Longing","Desire","Tension","Passion"]},
+    {text:"The closer two bodies get without touching the stronger it becomes. What is it?",answer:"Magnetic tension",options:["Heat","Magnetic tension","Anticipation","Chemistry"]},
+    {text:"It is whispered in ears to make the body respond before the mind catches up. What is it?",answer:"Seductive words",options:["A secret","Seductive words","A command","A confession"]}
+  ],
+  hard: [
+    {text:"This is the exact moment your body stops caring about consequences and takes over completely. What is it?",answer:"Losing control",options:["Giving in","Losing control","Pure desire","Surrender"]},
+    {text:"It happens to two people apart for a long time the moment the door closes behind them. What is it?",answer:"Desperate passion",options:["A long hug","Desperate passion","Intense kissing","Pure need"]},
+    {text:"Done slowly it is romantic, done quickly it is urgent, done in the dark it is intoxicating. What is it?",answer:"Undressing each other",options:["Kissing","Undressing each other","Making love","Touching"]},
+    {text:"The more forbidden it feels the more intensely you want it. This is what fuels it. What is it?",answer:"Temptation",options:["Lust","Temptation","Desire","Arousal"]},
+    {text:"It happens when two people finally stop pretending they do not want each other. What is it?",answer:"Giving in",options:["A first kiss","Giving in","Surrender","Release"]},
+    {text:"This is what your voice becomes involuntarily when you are deeply intimate with someone. What is it?",answer:"A breathless whisper",options:["Silence","A breathless whisper","A soft moan","A murmur"]},
+    {text:"It is the primal thing two people experience when the last barrier between them disappears. What is it?",answer:"Raw intimacy",options:["Passion","Raw intimacy","Physical connection","Exposure"]},
+    {text:"Every centimeter of skin exposed to someone you trust becomes what?",answer:"An act of vulnerability",options:["Intimacy","An act of vulnerability","Seduction","Trust"]},
+    {text:"This moment right after physical intimacy wrapped in silence is the most naked two people truly are. What is it?",answer:"Emotional exposure",options:["Afterglow","Emotional exposure","Vulnerability","True intimacy"]},
+    {text:"It is both the beginning and the end always leaving you wanting to start over again. What is it?",answer:"Pleasure",options:["An orgasm","Pleasure","A climax","Satisfaction"]}
+  ]
+};
+
+const DATE_IDEAS = [
+  {icon:"🕯️",title:"Candlelit dinner at home",desc:"Cook together with traditional Indian cuisine, dim lights and soft music"},
+  {icon:"🌃",title:"Rooftop evening",desc:"City lights, chai or wine, great music and deep conversations"},
+  {icon:"🛍️",title:"Market shopping spree",desc:"Explore local bazaars together — street food and surprises"},
+  {icon:"🎬",title:"Movie night",desc:"Classic Bollywood or a new release — popcorn and cuddles"},
+  {icon:"🚗",title:"Late night drive",desc:"Explore the city at night with good music and no destination"},
+  {icon:"🏔️",title:"Weekend hill station",desc:"Lonavala, Coorg or Manali — fresh air and just the two of you"},
+  {icon:"🎵",title:"Live music evening",desc:"Local band, jazz cafe or a concert — feel the music together"},
+  {icon:"💆",title:"Couples spa day",desc:"Relax together with massages and wellness treatments"}
+];
+
+const LEVELS = ['easy','medium','hard'];
+const LEVEL_LABELS = ['Level 1 — Sweet 💕','Level 2 — Spicy 🔥','Level 3 — Wild 🌶️'];
+const LEVEL_ICONS = ['💕','🔥','🌶️'];
+const LEVEL_DESCS = ['Sweet romantic riddles to warm you up','Flirty and sensual — getting spicier!','Wild and intimate — for the bold!'];
+const BADGE_CLASS = ['badge-easy','badge-med','badge-hard'];
+
+// ─── STATE ───
+const socket = io();
+let myName = '';
+let roomCode = '';        // FIX: now properly set for both players
+let myPlayerIndex = -1;
+let gameState = { level:0, qIndex:0, players:[] };
+let selectedAnswer = null;
+let timerInterval = null;
+let timeLeft = 45;
+let hasAnswered = false;
+let selectedDateIdx = null;
+let currentRiddleOptions = [];  // store shuffled options for current riddle
+
+// ─── HELPERS ───
+function show(id) {
+  ['screen-home','screen-waiting','screen-levelintro','screen-riddle','screen-gameover','screen-dates','screen-scheduled']
+    .forEach(s => document.getElementById(s).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+
+function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+// ─── SETUP ───
+function createRoom() {
+  const name = document.getElementById('player-name').value.trim();
+  if (!name) { showError('error-home','Please enter your name first!'); return; }
+  myName = name;
+  socket.emit('create_room', { playerName: name });
+}
+
+function joinRoom() {
+  const name = document.getElementById('player-name').value.trim();
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (!name) { showError('error-home','Please enter your name first!'); return; }
+  if (code.length < 6) { showError('error-home','Please enter the full 6-character room code!'); return; }
+  myName = name;
+  socket.emit('join_room', { code, playerName: name });
+}
+
+function copyCode() {
+  navigator.clipboard.writeText(roomCode)
+    .then(() => alert('Room code copied: ' + roomCode))
+    .catch(() => prompt('Copy this code:', roomCode));
+}
+
+function copyLink() {
+  const url = window.location.origin + window.location.pathname + '?code=' + roomCode;
+  navigator.clipboard.writeText(url)
+    .then(() => alert('Invite link copied!'))
+    .catch(() => prompt('Copy this link:', url));
+}
+
+function startGame() {
+  socket.emit('start_game', { code: roomCode });
+}
+
+function requestNextQuestion() {
+  // Just show the riddle screen — the server already sent it
+  renderRiddle();
+}
+
+// ─── GAME ───
+function renderRiddle() {
+  const { level, qIndex, players } = gameState;
+  const riddle = RIDDLES[LEVELS[level]][qIndex];
+  selectedAnswer = null;
+  hasAnswered = false;
+
+  // Scores
+  document.getElementById('score-p1').textContent = players[0]?.score || 0;
+  document.getElementById('score-p2').textContent = players[1]?.score || 0;
+  document.getElementById('name-p1').textContent = players[0]?.name || 'P1';
+  document.getElementById('name-p2').textContent = players[1]?.name || 'P2';
+
+  // Level info
+  const badge = document.getElementById('level-badge');
+  badge.textContent = LEVEL_LABELS[level].split('—')[1].trim();
+  badge.className = 'badge ' + BADGE_CLASS[level];
+  document.getElementById('q-counter').textContent = 'Q ' + (qIndex + 1) + '/10';
+  document.getElementById('riddle-text').textContent = riddle.text;
+
+  // Status banner
+  document.getElementById('status-banner').textContent = 'Answer now — both players see the same question!';
+  document.getElementById('status-banner').className = 'status-banner status-myturn';
+  document.getElementById('partner-status').textContent = '';
+
+  // Options — use same shuffle seed per question so both players see same order
+  // FIX: Use deterministic shuffle based on qIndex so both see same option order
+  const seed = level * 100 + qIndex;
+  currentRiddleOptions = seededShuffle(riddle.options, seed);
+
+  const container = document.getElementById('options-container');
+  container.innerHTML = '';
+  currentRiddleOptions.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-option';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => {
+      if (hasAnswered) return;
+      document.querySelectorAll('.btn-option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedAnswer = opt;
+      document.getElementById('submit-btn').disabled = false;
+    });
+    container.appendChild(btn);
+  });
+
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('result-box').classList.add('hidden');
+
+  startTimer();
+  show('screen-riddle');
+}
+
+// Seeded shuffle so both players see same option order
+function seededShuffle(arr, seed) {
+  const a = [...arr];
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    const j = Math.abs(s) % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = 45;
+  updateTimerUI();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerUI();
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      if (!hasAnswered) onTimeout();
+    }
+  }, 1000);
+}
+
+function stopTimer() { clearInterval(timerInterval); }
+
+function updateTimerUI() {
+  const pct = (timeLeft / 45) * 100;
+  const color = timeLeft <= 10 ? '#f87171' : timeLeft <= 20 ? '#fbbf24' : '#c4547e';
+  const numEl = document.getElementById('timer-num');
+  const fillEl = document.getElementById('timer-fill');
+  if (numEl) { numEl.textContent = timeLeft + 's'; numEl.style.color = color; }
+  if (fillEl) { fillEl.style.width = pct + '%'; fillEl.style.background = color; }
+}
+
+function onTimeout() {
+  if (hasAnswered) return;
+  hasAnswered = true;
+  stopTimer();
+  document.getElementById('submit-btn').disabled = true;
+  document.querySelectorAll('.btn-option').forEach(b => b.disabled = true);
+  document.getElementById('status-banner').textContent = 'Time is up! Waiting for partner...';
+  document.getElementById('status-banner').className = 'status-banner status-waiting';
+  socket.emit('timeout', { code: roomCode });
+}
+
+function submitAnswer() {
+  if (!selectedAnswer || hasAnswered) return;
+  hasAnswered = true;
+  stopTimer();
+
+  const riddle = RIDDLES[LEVELS[gameState.level]][gameState.qIndex];
+  const correct = selectedAnswer === riddle.answer;
+
+  document.querySelectorAll('.btn-option').forEach(btn => {
+    btn.disabled = true;
+    if (btn.textContent === riddle.answer) btn.classList.add('correct');
+    else if (btn.textContent === selectedAnswer && !correct) btn.classList.add('wrong');
+  });
+
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('status-banner').textContent = correct ? 'Correct! Waiting for partner...' : 'Wrong! Waiting for partner...';
+  document.getElementById('status-banner').className = 'status-banner ' + (correct ? 'status-answered' : 'status-waiting');
+
+  socket.emit('submit_answer', { code: roomCode, correct, answerText: selectedAnswer });
+}
+
+// ─── CHAT ───
+function sendChat() {
+  const el = document.getElementById('chat-input');
+  const msg = el.value.trim();
+  if (!msg) return;
+  socket.emit('chat_message', { code: roomCode, message: msg, sender: myName });
+  el.value = '';
+}
+
+function sendEmoji(e) {
+  socket.emit('chat_message', { code: roomCode, message: e, sender: myName });
+}
+
+function addChatMsg(sender, message, time) {
+  const box = document.getElementById('chatbox');
+  if (!box) return;
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  div.innerHTML = '<b>' + sender + ':</b> ' + message + (time ? ' <span style="color:#3d1a60;font-size:11px;">' + time + '</span>' : '');
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ─── DATE NIGHT ───
+function showDates() {
+  const container = document.getElementById('date-ideas');
+  container.innerHTML = '';
+  DATE_IDEAS.forEach((d, i) => {
+    const div = document.createElement('div');
+    div.className = 'date-card';
+    div.innerHTML = '<div style="font-size:24px;flex-shrink:0;">' + d.icon + '</div><div><div class="date-title">' + d.title + '</div><div class="date-desc">' + d.desc + '</div></div>';
+    div.addEventListener('click', () => {
+      document.querySelectorAll('.date-card').forEach(c => c.classList.remove('selected'));
+      div.classList.add('selected');
+      selectedDateIdx = i;
+      document.getElementById('schedule-form').classList.remove('hidden');
+    });
+    container.appendChild(div);
+  });
+  show('screen-dates');
+}
+
+function scheduleDate() {
+  const date = document.getElementById('date-input').value;
+  const time = document.getElementById('time-input').value;
+  if (!date || !time) { alert('Please pick both a date and a time!'); return; }
+  const idea = DATE_IDEAS[selectedDateIdx];
+  document.getElementById('scheduled-details').innerHTML =
+    '<div style="margin-bottom:6px;">📍 <b style="color:#f5d0e3;">' + idea.title + '</b></div>' +
+    '<div>📅 ' + date + '</div>' +
+    '<div style="margin-top:4px;">🕐 ' + time + '</div>' +
+    '<div style="margin-top:6px;color:#4ade80;font-weight:600;">🔔 Reminder set!</div>';
+  show('screen-scheduled');
+}
+
+// ─── SOCKET EVENTS ───
+
+// Host gets room code
+socket.on('room_created', ({ code }) => {
+  roomCode = code;   // FIX: Set roomCode for host
+  myPlayerIndex = 0;
+  document.getElementById('display-code').textContent = code;
+  show('screen-waiting');
+});
+
+// FIX: Player 2 now gets roomCode back from server
+socket.on('joined_room', ({ code }) => {
+  roomCode = code;   // FIX: Set roomCode for Player 2!
+  myPlayerIndex = 1;
+  console.log('Joined room, code set to:', code);
+});
+
+// Both players get updated room state
+socket.on('room_update', ({ players }) => {
+  gameState.players = players;
+  const list = document.getElementById('players-list');
+  if (list) {
+    list.innerHTML = players.map((p, i) =>
+      '<div class="player-tag">👤 ' + p.name + (i === 0 ? ' — Host' : ' — Guest') + '</div>'
+    ).join('');
+  }
+  if (players.length >= 2) {
+    const statusEl = document.getElementById('waiting-status');
+    if (statusEl) statusEl.innerHTML = '<p style="color:#4ade80;font-weight:600;">✅ Partner joined! Ready to start.</p>';
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn && myPlayerIndex === 0) startBtn.classList.remove('hidden');
+  }
+
+  // If player 2 just joined, show waiting room
+  if (myPlayerIndex === 1) {
+    show('screen-waiting');
+    document.getElementById('display-code').textContent = roomCode;
+    const statusEl = document.getElementById('waiting-status');
+    if (statusEl) statusEl.innerHTML = '<p style="color:#4ade80;font-weight:600;">✅ You joined! Waiting for host to start...</p>';
+  }
+});
+
+// Game started — show level intro
+socket.on('game_started', ({ level, players }) => {
+  gameState.level = level;
+  gameState.qIndex = 0;
+  gameState.players = players;
+  document.getElementById('level-icon').textContent = LEVEL_ICONS[level];
+  document.getElementById('level-title').textContent = LEVEL_LABELS[level];
+  document.getElementById('level-desc').textContent = LEVEL_DESCS[level];
+  document.getElementById('level-scores').innerHTML = players.map(p =>
+    '<div style="text-align:center;background:#2d1250;border-radius:12px;padding:12px 20px;border:1px solid #3d1a60;"><div style="font-size:22px;font-weight:700;color:#e87baa;">' + p.score + '</div><div style="font-size:12px;color:#6b4070;">' + p.name + '</div></div>'
+  ).join('');
+  show('screen-levelintro');
+});
+
+// Server sends new question — both players render SAME question simultaneously
+socket.on('new_question', ({ level, qIndex, players }) => {
+  gameState.level = level;
+  gameState.qIndex = qIndex;
+  gameState.players = players;
+  renderRiddle();  // Both players render same riddle at same time
+});
+
+// Partner answered notification
+socket.on('partner_answered', ({ playerName }) => {
+  const ps = document.getElementById('partner-status');
+  if (ps) ps.textContent = playerName + ' has answered ✓';
+});
+
+// Partner timed out
+socket.on('partner_timeout', ({ playerName }) => {
+  const ps = document.getElementById('partner-status');
+  if (ps) ps.textContent = playerName + ' ran out of time ⏰';
+  addChatMsg('⏰ System', playerName + ' ran out of time!', '');
+});
+
+// Both answered — show results
+socket.on('question_result', ({ results, players }) => {
+  gameState.players = players;
+  stopTimer();
+
+  document.getElementById('score-p1').textContent = players[0]?.score || 0;
+  document.getElementById('score-p2').textContent = players[1]?.score || 0;
+
+  // Show result box
+  const myResult = results.find(r => r.name === myName);
+  const partnerResult = results.find(r => r.name !== myName);
+  const correct = myResult?.correct;
+
+  const rb = document.getElementById('result-box');
+  rb.classList.remove('hidden');
+  rb.className = correct ? 'result-box result-correct' : 'result-box result-wrong';
+  rb.innerHTML =
+    '<div style="font-size:20px;font-weight:700;color:' + (correct ? '#4ade80' : '#f87171') + ';">' +
+    (correct ? '✅ Correct! +' + myResult.pts + ' pts' : '❌ Wrong! 0 pts') +
+    '</div>' +
+    '<div style="font-size:12px;color:#9b6b8a;margin-top:6px;">' +
+    (partnerResult ? (partnerResult.correct ? '💚 ' + partnerResult.name + ' also got it right!' : '❤️ ' + partnerResult.name + ' got it wrong.') : '') +
+    '</div>';
+});
+
+// Level up
+socket.on('level_up', ({ level, players }) => {
+  gameState.level = level;
+  gameState.qIndex = 0;
+  gameState.players = players;
+  stopTimer();
+  document.getElementById('level-icon').textContent = LEVEL_ICONS[level];
+  document.getElementById('level-title').textContent = LEVEL_LABELS[level];
+  document.getElementById('level-desc').textContent = LEVEL_DESCS[level];
+  document.getElementById('level-scores').innerHTML = players.map(p =>
+    '<div style="text-align:center;background:#2d1250;border-radius:12px;padding:12px 20px;border:1px solid #3d1a60;"><div style="font-size:22px;font-weight:700;color:#e87baa;">' + p.score + '</div><div style="font-size:12px;color:#6b4070;">' + p.name + '</div></div>'
+  ).join('');
+  show('screen-levelintro');
+});
+
+// Game over
+socket.on('game_over', ({ players }) => {
+  stopTimer();
+  gameState.players = players;
+  const p1 = players[0], p2 = players[1];
+  const winner = p1.score > p2.score ? p1.name : p2.score > p1.score ? p2.name : null;
+  document.getElementById('winner-text').textContent = winner ? '🏆 ' + winner + ' Wins!' : "🤝 It's a Tie!";
+  document.getElementById('final-scores').innerHTML = players.map(p =>
+    '<div style="text-align:center;background:#2d1250;border-radius:14px;padding:14px 20px;flex:1;border:1px solid #3d1a60;"><div style="font-size:26px;font-weight:700;color:#e87baa;">' + p.score + '</div><div style="font-size:13px;color:#6b4070;">' + p.name + '</div></div>'
+  ).join('');
+  show('screen-gameover');
+});
+
+// Chat
+socket.on('chat_message', ({ message, sender, time }) => {
+  addChatMsg(sender, message, time);
+});
+
+// Player left
+socket.on('player_left', ({ name }) => {
+  stopTimer();
+  alert('💔 ' + name + ' left the game. The room has been closed.');
+  location.reload();
+});
+
+// Error
+socket.on('join_error', ({ msg }) => {
+  showError('error-home', '❌ ' + msg);
+  show('screen-home');
+});
+
+// Auto-fill code from URL
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) document.getElementById('join-code').value = code.toUpperCase();
+});
+</script>
+</body>
+</html>
